@@ -47,6 +47,14 @@ int main(int argc, char* argv[]){
     double timeStart;
     GET_TIME(timeStart);
 
+    int p;
+
+    if(argc != 2)
+    {
+        printf("Please pass in the number of threads\n");
+        return 0;
+    }
+
     p=atoi(argv[1]);
 
     int i, j;
@@ -72,18 +80,18 @@ int main(int argc, char* argv[]){
     pthread_t* thread;
     thread = malloc(p*sizeof(pthread_t));
 
-    for(int i=0; i<p; i++){
+    for(i=0; i<p; i++){
         pthread_create(&thread[i], NULL, multiplyThread, (void*) i);
     }
 
-    // Close our threads and free them
-    for(int i=0; i<p; i++){
+    //Close our threads and free them
+    for(i=0; i<p; i++){
         pthread_join(thread[i], NULL);
     }
 
     free(thread);
 
-    // Stop the timer and record the results
+    //Stop the timer and record the results
     double timeFinished;
     GET_TIME(timeFinished);
     Lab1_saveoutput(C, &n, (timeFinished-timeStart));
