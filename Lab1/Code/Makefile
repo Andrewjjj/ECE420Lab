@@ -1,6 +1,6 @@
-C = gcc -g -lpthread -Wall
+C = gcc -g -pthread -Wall -lm
 
-main: 
+main: lab1.c lab1_IO.h
 	$(C) -o main lab1.c lab1_IO.c
 	@echo 'main.exe produced'
 
