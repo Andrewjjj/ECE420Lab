@@ -10,7 +10,7 @@
 #include "timer.h"
 #include "common.h"
 //#define NUM_STR 1024
-#define STR_LEN 20
+// #define STR_LEN 20
 
 pthread_mutex_t array_lock;
 char** string_array;
@@ -18,27 +18,34 @@ char** string_array;
 void *ServerEcho(void *args)
 {
     int clientFileDescriptor=(int)args;
-    char str[20];
+    char str[COM_BUFF_SIZE];
 
-    read(clientFileDescriptor,str,20);
+    read(clientFileDescriptor,str,COM_BUFF_SIZE);
     printf("reading from client:%s\n",str);
     
     printf("does this work?\n");
     ClientRequest cr;
     ParseMsg(str, &cr);
-    //printf("message parsed");
+    printf("message parsed\n");
     
+    printf("getting mutex\n");
+
+    pthread_mutex_lock(&array_lock);
+
+    char temp[COM_BUFF_SIZE];
     if(!cr.is_read)
     {
-        printf("getting mutex");
-        pthread_mutex_lock(&array_lock);
         setContent(cr.msg, cr.pos, string_array);
-        char* temp;
+        write(clientFileDescriptor,cr.msg,COM_BUFF_SIZE);
+        printf("%s\n", temp);
+        
+    } else 
+    {
         getContent(temp, cr.pos, string_array);
-        printf(temp);
-        pthread_mutex_unlock(&array_lock);
+        write(clientFileDescriptor,temp,COM_BUFF_SIZE);
     }
-    write(clientFileDescriptor,cr.msg,20);
+    pthread_mutex_unlock(&array_lock);
+    
     close(clientFileDescriptor);
 
     return NULL;
@@ -64,7 +71,7 @@ int main (int argc, char* argv[])
 
     string_array = (char**) malloc(arr_size * sizeof(char*));
     for (i = 0; i < arr_size; i ++){
-        string_array[i] = (char*) malloc(STR_LEN * sizeof(char));
+        string_array[i] = (char*) malloc(COM_BUFF_SIZE * sizeof(char));
         sprintf(string_array[i], "String %d: initial value", i);
         printf("%s\n\n", string_array[i]);
     }
