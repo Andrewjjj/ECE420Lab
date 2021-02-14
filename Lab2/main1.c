@@ -9,13 +9,11 @@
 #include <string.h>
 #include "timer.h"
 #include "common.h"
-//#define NUM_STR 1024
-// #define STR_LEN 20
 
 pthread_mutex_t array_lock;
 char** string_array;
 
-void *ServerEcho(void *args)
+void *ServerEchoSingleMutex(void *args)
 {
     int clientFileDescriptor=(int)args;
     char str[COM_BUFF_SIZE];
@@ -32,7 +30,8 @@ void *ServerEcho(void *args)
     if(!cr.is_read)
     {
         setContent(cr.msg, cr.pos, string_array);
-        write(clientFileDescriptor,cr.msg,COM_BUFF_SIZE);
+        getContent(temp, cr.pos, string_array);
+        write(clientFileDescriptor,temp,COM_BUFF_SIZE);
     } else 
     {
         getContent(temp, cr.pos, string_array);
@@ -83,7 +82,11 @@ int main (int argc, char* argv[])
             {
                 clientFileDescriptor=accept(serverFileDescriptor,NULL,NULL);
                 printf("Connected to client %d\n",clientFileDescriptor);
-                pthread_create(&t[i],NULL,ServerEcho,(void *)(long)clientFileDescriptor);
+                pthread_create(&t[i],NULL,ServerEchoSingleMutex,(void *)(long)clientFileDescriptor);
+            }
+            for(i=0;i<COM_NUM_REQUEST;i++)
+            {
+                pthread_join(t[i], NULL);
             }
         }
         close(serverFileDescriptor);

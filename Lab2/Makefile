@@ -6,5 +6,8 @@ main1: main1.c
 client: client.c 
 	$(C) client.c -o client
 
+attacker: attacker.c 
+	$(C) attacker.c -o attacker
+
 clean:
-	rm main1 client
+	rm main1 client attacker
