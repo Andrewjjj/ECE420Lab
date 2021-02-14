@@ -23,12 +23,8 @@ void *ServerEcho(void *args)
     read(clientFileDescriptor,str,COM_BUFF_SIZE);
     printf("reading from client:%s\n",str);
     
-    printf("does this work?\n");
     ClientRequest cr;
     ParseMsg(str, &cr);
-    printf("message parsed\n");
-    
-    printf("getting mutex\n");
 
     pthread_mutex_lock(&array_lock);
 
@@ -37,8 +33,6 @@ void *ServerEcho(void *args)
     {
         setContent(cr.msg, cr.pos, string_array);
         write(clientFileDescriptor,cr.msg,COM_BUFF_SIZE);
-        printf("%s\n", temp);
-        
     } else 
     {
         getContent(temp, cr.pos, string_array);
@@ -67,7 +61,7 @@ int main (int argc, char* argv[])
     int serverFileDescriptor=socket(AF_INET,SOCK_STREAM,0);
     int clientFileDescriptor;
     int i;
-    pthread_t t[1000];
+    pthread_t t[COM_NUM_REQUEST];
 
     string_array = (char**) malloc(arr_size * sizeof(char*));
     for (i = 0; i < arr_size; i ++){
@@ -85,7 +79,7 @@ int main (int argc, char* argv[])
         listen(serverFileDescriptor,2000);
         while(1)        //loop infinity
         {
-            for(i=0;i<1;i++)      //can support 1000 clients at a time
+            for(i=0;i<COM_NUM_REQUEST;i++)      //can support 1000 clients at a time
             {
                 clientFileDescriptor=accept(serverFileDescriptor,NULL,NULL);
                 printf("Connected to client %d\n",clientFileDescriptor);
