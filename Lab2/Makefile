@@ -5,7 +5,7 @@ main1: main1.c
 	@echo 'main1.exe produced'
 
 main2: main2.c 
-	$(C) main2.c -o main1
+	$(C) main2.c -o main2
 	@echo 'main2.exe produced'
   
 main3: main3.c
@@ -29,7 +29,8 @@ client: client.c
 	@echo 'client.exe produced'
 
 clean: 
-	@rm -f client simpClient main1 main2 main3 main4
+	@rm -f client simpClient main1 main2 main3 main4 attacker
+	@rm -r *.dSYM
 	@echo 'directory cleaned'
 
 clean2:
