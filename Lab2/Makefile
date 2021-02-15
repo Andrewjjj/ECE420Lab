@@ -8,6 +8,10 @@ main3: main3.c
 	$(C) main3.c -o main3
 	@echo 'main3.exe produced'
 
+main4: main4.c
+	$(C) main4.c -o main4
+	@echo 'main4.exe produced'
+
 simpClient: demos/simpleClient.c
 	$(C) demos/simpleClient.c -o simpClient
 	@echo 'simpClient.exe produced'
