@@ -113,15 +113,16 @@ int main (int argc, char* argv[])
     char* server_ip = argv[2];
     int server_port = atoi(argv[3]);
 
-    rwlock_array = malloc(arr_size*sizeof(rwlock_t));
-    for(int i=0; i<arr_size; i++)
-        rwlock_init(&rwlock_array[i]);
 
     struct sockaddr_in sock_var;
     int serverFileDescriptor=socket(AF_INET,SOCK_STREAM,0);
     int clientFileDescriptor;
     int i;
     pthread_t t[1000];
+
+    rwlock_array = malloc(arr_size*sizeof(rwlock_t));
+    for(i=0; i<arr_size; i++)
+        rwlock_init(&rwlock_array[i]);
 
     string_array = malloc(arr_size * COM_BUFF_SIZE);
     for (i = 0; i < arr_size; i ++){
@@ -156,6 +157,13 @@ int main (int argc, char* argv[])
     else{
         printf("socket creation failed\n");
     }
+    
+    for (i = 0; i < arr_size; i ++){
+        free(string_array[i]);
+    }
+    free(rwlock_array);
+    free(string_array);
+
 
     return 0;
 }

@@ -165,5 +165,10 @@ int main (int argc, char* argv[])
         printf("socket creation failed\n");
     }
 
+    for (i = 0; i < arr_size; i ++){
+        free(string_array[i]);
+    }
+    free(string_array);
+
     return 0;
 }

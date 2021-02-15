@@ -5,7 +5,7 @@ main1: main1.c
 	@echo 'main1.exe produced'
 
 main2: main2.c 
-	$(C) main2.c -o main1
+	$(C) main2.c -o main2
 	@echo 'main2.exe produced'
   
 main3: main3.c
