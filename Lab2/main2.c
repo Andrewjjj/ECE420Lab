@@ -10,7 +10,7 @@
 #include "timer.h"
 #include "common.h"
 
-pthread_mutex_t array_lock;
+pthread_mutex_t* mutex_array;
 char** string_array;
 
 void *ServerEchoSingleMutex(void *args)
@@ -20,11 +20,11 @@ void *ServerEchoSingleMutex(void *args)
 
     read(clientFileDescriptor,str,COM_BUFF_SIZE);
     printf("reading from client:%s\n",str);
-
+    
     ClientRequest cr;
     ParseMsg(str, &cr);
 
-    pthread_mutex_lock(&array_lock);
+    pthread_mutex_lock(&mutex_array[cr.pos]);
 
     char temp[COM_BUFF_SIZE];
     if(!cr.is_read)
@@ -37,7 +37,7 @@ void *ServerEchoSingleMutex(void *args)
         getContent(temp, cr.pos, string_array);
         write(clientFileDescriptor,temp,COM_BUFF_SIZE);
     }
-    pthread_mutex_unlock(&array_lock);
+    pthread_mutex_unlock(&mutex_array[cr.pos]);
     
     close(clientFileDescriptor);
 
@@ -50,20 +50,23 @@ int main (int argc, char* argv[])
         printf("Please pass in the correct number of arguments\n");
         return 0;
     }
-    pthread_mutex_init(&array_lock, NULL);
 
     int arr_size = atoi(argv[1]);
     char* server_ip = argv[2];
     int server_port = atoi(argv[3]);
+    int i;
+
+    mutex_array = (pthread_mutex_t*) malloc(arr_size * sizeof(pthread_mutex_t));
+    for (i = 0; i < arr_size; i++) {
+        pthread_mutex_init(&mutex_array[i], NULL);
+    }
 
     struct sockaddr_in sock_var;
     int serverFileDescriptor=socket(AF_INET,SOCK_STREAM,0);
     int clientFileDescriptor;
-    int i;
-
     pthread_t t[COM_NUM_REQUEST];
+
     string_array = (char**) malloc(arr_size * sizeof(char*));
-  
     for (i = 0; i < arr_size; i ++){
         string_array[i] = (char*) malloc(COM_BUFF_SIZE * sizeof(char));
         sprintf(string_array[i], "String %d: initial value", i);

@@ -4,6 +4,10 @@ main1: main1.c
 	$(C) main1.c -o main1
 	@echo 'main1.exe produced'
 
+main2: main2.c 
+	$(C) main2.c -o main1
+  @echo 'main2.exe produced'
+  
 main3: main3.c
 	$(C) main3.c -o main3
 	@echo 'main3.exe produced'
@@ -20,6 +24,9 @@ client: client.c
 	$(C) client.c -o client
 	@echo 'client.exe produced'
 
-clean: 
+clean1: 
 	@rm -f client simpClient main1 main3
 	@echo 'directory cleaned'
+
+clean2:
+	rm main1 main2 client attacker
