@@ -20,7 +20,7 @@ void *ServerEchoSingleMutex(void *args)
 
     read(clientFileDescriptor,str,COM_BUFF_SIZE);
     printf("reading from client:%s\n",str);
-    
+
     ClientRequest cr;
     ParseMsg(str, &cr);
 
@@ -60,9 +60,10 @@ int main (int argc, char* argv[])
     int serverFileDescriptor=socket(AF_INET,SOCK_STREAM,0);
     int clientFileDescriptor;
     int i;
-    pthread_t t[COM_NUM_REQUEST];
 
+    pthread_t t[COM_NUM_REQUEST];
     string_array = (char**) malloc(arr_size * sizeof(char*));
+  
     for (i = 0; i < arr_size; i ++){
         string_array[i] = (char*) malloc(COM_BUFF_SIZE * sizeof(char));
         sprintf(string_array[i], "String %d: initial value", i);
