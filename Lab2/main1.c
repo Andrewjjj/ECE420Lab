@@ -9,8 +9,6 @@
 #include <string.h>
 #include "timer.h"
 #include "common.h"
-//#define NUM_STR 1024
-// #define STR_LEN 20
 
 pthread_mutex_t array_lock;
 char** string_array;
@@ -33,7 +31,6 @@ void *ServerExecute(void *args)
     {
         setContent(cr.msg, cr.pos, string_array);
         write(clientFileDescriptor,cr.msg,COM_BUFF_SIZE);
-        printf("%s\n", temp);
         
     } else 
     {
@@ -86,6 +83,10 @@ int main (int argc, char* argv[])
                 clientFileDescriptor=accept(serverFileDescriptor,NULL,NULL);
                 printf("Connected to client %d\n",clientFileDescriptor);
                 pthread_create(&t[i],NULL,ServerEcho,(void *)(long)clientFileDescriptor);
+            }
+            for(i = 0; i < 1000; i++)
+            {
+                pthread_join(t[i], NULL);
             }
         }
         close(serverFileDescriptor);

@@ -100,14 +100,12 @@ void *ServerExecute(void *args)
         setContent(cr.msg, cr.pos, string_array);
         getContent(temp, cr.pos, string_array);
         write(clientFileDescriptor,temp,COM_BUFF_SIZE);
-        printf("pending writers: %d, readers: %d, writer: %d\n", mylock.pending_writers, mylock.readers, mylock.writer_present);
-
-    } else 
+    } 
+    else 
     {
         read_lock(&mylock);
         getContent(temp, cr.pos, string_array);
         write(clientFileDescriptor,temp,COM_BUFF_SIZE);
-        printf("pending writers: %d, readers: %d, writer: %d\n", mylock.pending_writers, mylock.readers, mylock.writer_present);
     }
     rw_unlock(&mylock);
     close(clientFileDescriptor);
