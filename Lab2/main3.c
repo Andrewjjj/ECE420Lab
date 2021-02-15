@@ -23,6 +23,10 @@ typedef struct {
 char** string_array;
 rw_lock mylock;
 
+pthread_mutex_t index_mutex;
+int ind;
+double timing[1000];
+
 void rw_lock_init(rw_lock* l)
 {
     l->readers = 0;
@@ -84,11 +88,15 @@ void rw_unlock(rw_lock* l)
 
 void *ServerExecute(void *args)
 {
+    double start_time;
+    double end_time;
+
     int clientFileDescriptor=(int)args;
     char str[COM_BUFF_SIZE];
 
     read(clientFileDescriptor,str,COM_BUFF_SIZE);
-    printf("reading from client:%s\n",str);
+    //printf("reading from client:%s\n",str);
+    GET_TIME(start_time);
 
     ClientRequest cr;
     ParseMsg(str, &cr);
@@ -99,16 +107,24 @@ void *ServerExecute(void *args)
         write_lock(&mylock);
         setContent(cr.msg, cr.pos, string_array);
         getContent(temp, cr.pos, string_array);
+        GET_TIME(end_time);
         write(clientFileDescriptor,temp,COM_BUFF_SIZE);
     } 
     else 
     {
         read_lock(&mylock);
         getContent(temp, cr.pos, string_array);
+        GET_TIME(end_time);
         write(clientFileDescriptor,temp,COM_BUFF_SIZE);
     }
+
     rw_unlock(&mylock);
     close(clientFileDescriptor);
+    pthread_mutex_lock(&index_mutex);
+    timing[ind] = end_time - start_time;
+    ind += 1;
+    ind = ind % COM_NUM_REQUEST;
+    pthread_mutex_unlock(&index_mutex);
     pthread_exit(NULL);
     return NULL;
 }
@@ -120,6 +136,8 @@ int main (int argc, char* argv[])
         return 0;
     }
     rw_lock_init(&mylock);
+    pthread_mutex_init(&index_mutex, NULL);
+    ind = 0;
 
     int arr_size = atoi(argv[1]);
     char* server_ip = argv[2];
@@ -135,7 +153,7 @@ int main (int argc, char* argv[])
     for (i = 0; i < arr_size; i ++){
         string_array[i] = (char*) malloc(COM_BUFF_SIZE * sizeof(char));
         sprintf(string_array[i], "String %d: initial value", i);
-        printf("%s\n\n", string_array[i]);
+        //printf("%s\n\n", string_array[i]);
     }
 
     sock_var.sin_addr.s_addr=inet_addr(server_ip);
@@ -147,17 +165,17 @@ int main (int argc, char* argv[])
         listen(serverFileDescriptor,2000);
         while(1)        //loop 
         {
-            for(i=0;i<1000;i++)      //can support 1000 clients at a time
+            for(i=0;i<COM_NUM_REQUEST;i++)      //can support 1000 clients at a time
             {
                 clientFileDescriptor=accept(serverFileDescriptor,NULL,NULL);
-                printf("Connected to client %d\n",clientFileDescriptor);
+                //printf("Connected to client %d\n",clientFileDescriptor);
                 pthread_create(&t[i],NULL,ServerExecute,(void *)(long)clientFileDescriptor);
-                
             }
-            for(i = 0; i < 1000; i++)
+            for(i = 0; i < COM_NUM_REQUEST; i++)
             {
                 pthread_join(t[i], NULL);
             }
+            saveTimes(timing, 1000);
         }
         close(serverFileDescriptor);
     }
