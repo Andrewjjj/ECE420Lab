@@ -29,7 +29,8 @@ client: client.c
 	@echo 'client.exe produced'
 
 clean: 
-	@rm -f client simpClient main1 main2 main3 main4
+	@rm -f client simpClient main1 main2 main3 main4 attacker
+	@rm -r *.dSYM
 	@echo 'directory cleaned'
 
 clean2:
