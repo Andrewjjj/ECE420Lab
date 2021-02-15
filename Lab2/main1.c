@@ -15,7 +15,7 @@
 pthread_mutex_t array_lock;
 char** string_array;
 
-void *ServerEcho(void *args)
+void *ServerExecute(void *args)
 {
     int clientFileDescriptor=(int)args;
     char str[COM_BUFF_SIZE];
