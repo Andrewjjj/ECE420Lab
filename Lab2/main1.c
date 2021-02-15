@@ -13,17 +13,24 @@
 pthread_mutex_t array_lock;
 char** string_array;
 
+double time_arr[COM_NUM_REQUEST];
+int time_index;
+pthread_mutex_t time_lock;
+
 void *ServerEchoSingleMutex(void *args)
 {
     int clientFileDescriptor=(int)args;
     char str[COM_BUFF_SIZE];
+
+    double start_time;
+    double end_time;
 
     read(clientFileDescriptor,str,COM_BUFF_SIZE);
     printf("reading from client:%s\n",str);
 
     ClientRequest cr;
     ParseMsg(str, &cr);
-
+    GET_TIME(start_time);
     pthread_mutex_lock(&array_lock);
 
     char temp[COM_BUFF_SIZE];
@@ -31,15 +38,23 @@ void *ServerEchoSingleMutex(void *args)
     {
         setContent(cr.msg, cr.pos, string_array);
         getContent(temp, cr.pos, string_array);
+        GET_TIME(end_time);
         write(clientFileDescriptor,temp,COM_BUFF_SIZE);
     } else 
     {
         getContent(temp, cr.pos, string_array);
+        GET_TIME(end_time);
         write(clientFileDescriptor,temp,COM_BUFF_SIZE);
     }
     pthread_mutex_unlock(&array_lock);
     
     close(clientFileDescriptor);
+
+    pthread_mutex_lock(&time_lock);
+    time_arr[time_index] = end_time - start_time;
+    time_index += 1;
+    time_index = time_index % COM_NUM_REQUEST;
+    pthread_mutex_unlock(&time_lock);
 
     return NULL;
 }
@@ -51,6 +66,7 @@ int main (int argc, char* argv[])
         return 0;
     }
     pthread_mutex_init(&array_lock, NULL);
+    pthread_mutex_init(&time_lock, NULL);
 
     int arr_size = atoi(argv[1]);
     char* server_ip = argv[2];
@@ -89,6 +105,7 @@ int main (int argc, char* argv[])
             {
                 pthread_join(t[i], NULL);
             }
+            saveTimes(time_arr,COM_NUM_REQUEST);
         }
         close(serverFileDescriptor);
     }
