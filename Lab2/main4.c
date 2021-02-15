@@ -23,6 +23,10 @@ typedef struct {
 char** string_array;
 rwlock_t* rwlock_array;
 
+pthread_mutex_t timesLock;
+int timesIndex = 0;
+double timesArray[COM_NUM_REQUEST];
+
 void rwlock_init(rwlock_t* l)
 {
     l -> readers = l -> writer = l -> pending_writers = 0;
@@ -77,7 +81,10 @@ void *ServerExecute(void *args)
     char str[COM_BUFF_SIZE];
 
     read(clientFileDescriptor,str,COM_BUFF_SIZE);
-    printf("reading from client:%s\n",str);
+    // printf("reading from client:%s\n",str);
+
+    double timeBegin, timeEnd;
+    GET_TIME(timeBegin);
 
     ClientRequest cr;
     ParseMsg(str, &cr);
@@ -88,16 +95,23 @@ void *ServerExecute(void *args)
         rwlock_write_lock(&rwlock_array[cr.pos]);
         setContent(cr.msg, cr.pos, string_array);
         getContent(temp, cr.pos, string_array);
+        GET_TIME(timeEnd);
         write(clientFileDescriptor,temp,COM_BUFF_SIZE);
     } 
     else 
     {
         rwlock_read_lock(&rwlock_array[cr.pos]);
         getContent(temp, cr.pos, string_array);
+        GET_TIME(timeEnd);
         write(clientFileDescriptor,temp,COM_BUFF_SIZE);
     }
+
     rwlock_unlock(&rwlock_array[cr.pos]);
     close(clientFileDescriptor);
+
+    pthread_mutex_lock(&timesLock);
+    timesArray[timesIndex++ % COM_NUM_REQUEST] = timeEnd-timeBegin;
+    pthread_mutex_unlock(&timesLock);
     pthread_exit(NULL);
     return NULL;
 }
@@ -120,6 +134,8 @@ int main (int argc, char* argv[])
     int i;
     pthread_t t[1000];
 
+    pthread_mutex_init(&timesLock, NULL);
+
     rwlock_array = malloc(arr_size*sizeof(rwlock_t));
     for(i=0; i<arr_size; i++)
         rwlock_init(&rwlock_array[i]);
@@ -127,7 +143,7 @@ int main (int argc, char* argv[])
     string_array = malloc(arr_size * COM_BUFF_SIZE);
     for (i = 0; i < arr_size; i ++){
         string_array[i] = (char*) malloc(COM_BUFF_SIZE * sizeof(char));
-        sprintf(string_array[i], "String %d: initial value", i);
+        // sprintf(string_array[i], "String %d: initial value", i);
         printf("%s\n\n", string_array[i]);
     }
 
@@ -140,24 +156,24 @@ int main (int argc, char* argv[])
         listen(serverFileDescriptor,2000);
         while(1)        //loop 
         {
-            for(i=0;i<1000;i++)      //can support 1000 clients at a time
+            for(i=0;i<COM_NUM_REQUEST;i++)      //can support 1000 clients at a time
             {
                 clientFileDescriptor=accept(serverFileDescriptor,NULL,NULL);
-                printf("Connected to client %d\n",clientFileDescriptor);
+                // printf("Connected to client %d\n",clientFileDescriptor);
                 pthread_create(&t[i],NULL,ServerExecute,(void *)(long)clientFileDescriptor);
-                
             }
-            for(i = 0; i < 1000; i++)
+            for(i = 0; i < COM_NUM_REQUEST; i++)
             {
                 pthread_join(t[i], NULL);
             }
+            saveTimes(timesArray, COM_NUM_REQUEST);
         }
         close(serverFileDescriptor);
     }
     else{
         printf("socket creation failed\n");
     }
-    
+
     for (i = 0; i < arr_size; i ++){
         free(string_array[i]);
     }
