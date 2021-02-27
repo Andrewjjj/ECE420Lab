@@ -1,0 +1,18 @@
+C = gcc -ggdb -pthread -Wall
+
+main: main.c Lab3IO.c
+	$(C) main.c Lab3IO.c -o main
+	@echo 'main.exe produced'
+
+datagen: datagen.c Lab3IO.c
+	$(C) datagen.c Lab3IO.c -o datagen
+	@echo 'datagen.exe produced'
+
+tester: serialtester.c Lab3IO.c
+	$(C) serialtester.c Lab3IO.c -o tester -lm
+	@echo 'tester.exe produced'
+
+clean: 
+	@rm -f tester datagen main data_input
+	@rm -r *.dSYM
+	@echo 'directory cleaned'
