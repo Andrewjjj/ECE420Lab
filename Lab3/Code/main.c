@@ -6,21 +6,28 @@
 #include <omp.h> 
 #include "timer.h"
 #include "Lab3IO.h"
+#include <omp.h>
 
 double** matrix;
 double* vector;
-int num_threads;
+int thread_count;
 int size;
 
-int pivot(int row1, int row2)
+/*
+void pivot(int row1, int row2)
 {
     int i;
     // iterating through columns
-    for(i = 0; i < size + 1; i++)
+
+    # pragma omp parallel num_threads(num_threads)
     {
-        double temp = matrix[row1][i];
-        matrix[row1][i] = matrix[row2][i];
-        matrix[row2][i] = temp;
+        # pragma omp for
+        for(i = 0; i < size + 1; i++)
+        {
+            double temp = matrix[row1][i];
+            matrix[row1][i] = matrix[row2][i];
+            matrix[row2][i] = temp;
+        }
     }
 }
 
@@ -30,7 +37,7 @@ int find_max_row(int col)
     double max = 0;
     int max_ind = -1;
     // iterating through rows
-    for(i = 0; i < size; i++)
+    for(i = col; i < size; i++)
     {
         if( fabs(matrix[i][col]) > fabs(max) )
         {
@@ -41,31 +48,18 @@ int find_max_row(int col)
     return max_ind;
 }
 
-void solve()
+
+void reduce(int cur)
 {
-    int i, k, j;
-    for(k = 0; k < size; k++)
+    int row = cur + 1;
+    for(row; row< size; row++)
     {
-        int row = find_max_row(k);
-        pivot(row, k);
-        //reduce(k);
-        // iterating through rows
-        for(i = k+1; i < size; i++)
+        double factor = matrix[cur][cur]/matrix[row][cur];
+        int col;
+        for(col = cur; col < size + 1; col++)
         {
-            double factor = matrix[i][k] / matrix[k][k];
-            //iterating through columns
-            for(j = k; j < size + 1; j++)
-            {
-                matrix[i][j] = matrix[i][j] - factor * matrix[k][j];
-            }
-        }
-    }
-    for(k = size - 1; k >= 1; k--)
-    {
-        for(i = 0; i <= k-1; i++)
-        {
-            matrix[i][size] = matrix[i][size] - (matrix[i][k] / matrix[k][k]) * matrix[k][size];
-            matrix[i][k] = 0;
+            matrix[row][col] *= factor;
+            matrix[row][col] -= matrix[cur][col];
         }
     }
 }
@@ -79,53 +73,116 @@ void get_solution()
         vector[i] = matrix[i][size] / matrix[i][i];
     }
 }
+*/
+
+void solve()
+{
+    int i, k, j;
+    //Gaussian
+    for(k = 0; k < size-1; k++)
+    {
+        // find max row
+        double max = 0;
+        int max_ind = -1;
+        for(i = k; i < size; i++)
+        {
+            if( fabs(matrix[i][k]) > max )
+            {
+                max = fabs(matrix[i][k]);
+                max_ind = i;
+            }
+        }
+        // pivot
+        // # pragma omp for
+        
+        // # pragma omp parallel for num_threads(thread_count) shared(k, matrix)
+        for(i = 0; i < size + 1; i++)
+        {
+            double temp = matrix[k][i];
+            matrix[k][i] = matrix[max_ind][i];
+            matrix[max_ind][i] = temp;
+        }
+
+        # pragma omp parallel for num_threads(thread_count)
+        for(i = k+1; i < size; i++)
+        {
+            
+            double factor = matrix[i][k] / matrix[k][k];
+            //iterating through columns
+            
+            # pragma omp parallel for num_threads(thread_count)
+            for(j = k; j < size + 1; j++)
+            {
+                // printf("%d\n", omp_get_num_threads());
+                matrix[i][j] = matrix[i][j] - factor * matrix[k][j];
+            }
+        }
+    }
+    //jordan
+    for(k = size - 1; k > 0; k--)
+    {
+        // # pragma omp parallel for num_threads(thread_count)
+        for(i = 0; i < k; i++)
+        {
+            matrix[i][size] = matrix[i][size] - (matrix[i][k] / matrix[k][k]) * matrix[k][size];
+            matrix[i][k] = 0;
+        }
+    }
+    // # pragma omp parallel for num_threads(thread_count)
+    for(i = 0; i < size; i++)
+    {
+        vector[i] = matrix[i][size] / matrix[i][i];
+    }
+}
 
 int main (int argc, char *argv[])
 {
-    int i, j;
     double start, end;
     
     if (argc != 2) {
         printf ("Please pass in the number of threads\n");
         return 1;
     }
-    num_threads = atoi(argv[1]);
+    thread_count = atoi(argv[1]);
     Lab3LoadInput(&matrix, &size);
-    printf("%d", size);
+    vector = CreateVec(size);
+    // printf("%d", size);
     
-    for(i = 0; i < size; i++)
-    {
-        for(j = 0; j < size + 1; j++)
-        {
-            printf("%f ", matrix[i][j]);
-        }
-        printf("\n");
-    }
+    // for(i = 0; i < size; i++)
+    // {
+    //     for(j = 0; j < size + 1; j++)
+    //     {
+    //         printf("%f ", matrix[i][j]);
+    //     }
+    //     printf("\n");
+    // }
 
-    printf("\n");
+    // printf("\n");
 
     GET_TIME(start);
+    
     solve();
     GET_TIME(end);
     
-    for(i = 0; i < size; i++)
-    {
-        for(j = 0; j < size + 1; j++)
-        {
-            printf("%f ", matrix[i][j]);
-        }
-        printf("\n");
-    }
+    // for(i = 0; i < size; i++)
+    // {
+    //     for(j = 0; j < size + 1; j++)
+    //     {
+    //         printf("%f ", matrix[i][j]);
+    //     }
+    //     printf("\n");
+    // }
 
-    get_solution();
+    // get_solution();
 
-    for(j = 0; j < size; j++)
-    {
-        printf("%f ", vector[j]);
-    }
-    printf("\n");
+    // for(j = 0; j < size; j++)
+    // {
+    //     printf("%f ", vector[j]);
+    // }
+    // printf("\n");
+    printf("%f\n", end-start);
     
-    Lab3SaveOutput(vector, size, start-end);
+    Lab3SaveOutput(vector, size, end-start);
     
     return 0;
 }

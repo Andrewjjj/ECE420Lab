@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Lab3IO.h"
+#include <omp.h>
 
 int Lab3LoadInput(double ***A, int *size){
 /*

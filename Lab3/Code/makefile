@@ -1,7 +1,7 @@
 C = gcc -ggdb -pthread -Wall
 
 main: main.c Lab3IO.c
-	$(C) main.c Lab3IO.c -o main
+	$(C) main.c Lab3IO.c -o main -fopenmp
 	@echo 'main.exe produced'
 
 serial: serial.c Lab3IO.c
