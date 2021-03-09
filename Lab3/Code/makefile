@@ -13,6 +13,6 @@ tester: serialtester.c Lab3IO.c
 	@echo 'tester.exe produced'
 
 clean: 
-	@rm -f tester datagen main data_input
+	@rm -f tester datagen main data_input data_output
 	@rm -r *.dSYM
 	@echo 'directory cleaned'
