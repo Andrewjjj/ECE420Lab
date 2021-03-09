@@ -1,9 +1,8 @@
-// main
+// serial
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <omp.h> 
 #include "timer.h"
 #include "Lab3IO.h"
 
@@ -40,6 +39,23 @@ int find_max_row(int col)
     }
     return max_ind;
 }
+
+/*
+void reduce(int cur)
+{
+    int row = cur + 1;
+    for(row; row< size; row++)
+    {
+        double factor = matrix[cur][cur]/matrix[row][cur];
+        int col;
+        for(col = cur; col < size + 1; col++)
+        {
+            matrix[row][col] *= factor;
+            matrix[row][col] -= matrix[cur][col];
+        }
+    }
+}
+*/
 
 void solve()
 {

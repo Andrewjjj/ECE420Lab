@@ -4,6 +4,10 @@ main: main.c Lab3IO.c
 	$(C) main.c Lab3IO.c -o main
 	@echo 'main.exe produced'
 
+serial: serial.c Lab3IO.c
+	$(C) serial.c Lab3IO.c -o serial
+	@echo 'serial.exe produced'
+
 datagen: datagen.c Lab3IO.c
 	$(C) datagen.c Lab3IO.c -o datagen
 	@echo 'datagen.exe produced'
