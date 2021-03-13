@@ -15,7 +15,6 @@ int size;
 
 void solve()
 {
-    double start,end;
     int i, k, j;
     //Gaussian
     for(k = 0; k < size-1; k++)
