@@ -1,6 +1,11 @@
 Read me for ECE 420 Lab2 Script Kit
 Jan. 2019
 
+1. A single mutex protecting the entire array. - main1
+2. Multiple mutexes, each protecting a different string. - main2
+3. A single read/write lock protecting the entire array. - main3
+4. Multiple read/write locks, each protecting a different string. - main4
+
 Content
 =====
 1. demo/simpleClient.c 
@@ -26,3 +31,45 @@ Content
    ** A shell script showing you how to run your client 100 times.
 =====
 Please also find the detailed instructions in the comments of the individual files.
+
+==================================================
+How to Make:
+To clean, simply run:
+>> make clean
+
+There are 4 different servers for this project which are:
+1. A single mutex protecting the entire array.
+2. Multiple mutexes, each protecting a different string.
+3. A single read/write lock protecting the entire array.
+4. Multiple read/write locks, each protecting a different string.
+They corrospond to main1, main2, main3, and main4, respectively.
+
+To make server files:
+>> make
+
+Or, to gerate them individually, run
+>> make main1
+>> make main2
+>> make main3
+>> make main4
+
+To make client:
+>> make client
+
+To make attacker:
+>> make attacker
+
+How to Run:
+After you made all the files using make, you may execute them.
+
+To execute the individual servers:
+>> ./main(#) <string_length> <ip_address> <port>
+
+For example, to execute the single read/write lock protecting the entire array, which is main3, with string size of 10, localhost ip address and port 3000,
+>> ./make3 10 127.0.0.1 3000
+
+To execute the client,
+>> ./client <string_length> <ip_address> <port>
+
+For with string size of 10, localhost ip address and port 3000
+>> ./client 10 127.0.0.1 3000

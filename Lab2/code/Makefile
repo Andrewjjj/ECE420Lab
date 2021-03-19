@@ -1,5 +1,7 @@
 C = gcc -g -pthread -Wall
 
+all: main1 main2 main3 main4
+
 main1: main1.c
 	$(C) main1.c -o main1
 	@echo 'main1.exe produced'
