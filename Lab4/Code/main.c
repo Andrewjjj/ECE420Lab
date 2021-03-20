@@ -13,7 +13,7 @@
 
 int nodecount;
 
-int node_begin, node_end;
+// int node_begin, node_end;
 int block_size;
 
 double damp_const;
@@ -22,7 +22,6 @@ double *last_results;
 double *results;
 double *local_results;
 double *contribution;
-double *merged_result;
 
 int mpi_size;
 int mpi_rank;
@@ -39,28 +38,11 @@ int get_data()
     fclose(ip);
 
     block_size = nodecount/mpi_size;
-    node_begin = mpi_rank * block_size;
-    node_end = node_begin + block_size - 1;
+    // node_begin = mpi_rank * block_size;
+    // node_end = node_begin + block_size - 1;
 
     if (node_init(&nodehead, 0, nodecount)) return 254;
     return 0;
-}
-
-void init_values()
-{
-    int i;
-    last_results = malloc(nodecount * sizeof(double));
-    results = malloc(nodecount * sizeof(double));
-    local_results = malloc(block_size * sizeof(double));
-    contribution = malloc(nodecount * sizeof(double));
-    merged_result = malloc(nodecount * sizeof(double));
-    
-    for(i = 0; i < nodecount; i++)
-    {
-        results[i] = 1.0 / nodecount;
-    }
-
-    update_contributions();
 }
 
 void update_contributions()
@@ -72,6 +54,22 @@ void update_contributions()
     }
 }
 
+void init_values()
+{
+    int i;
+    last_results = malloc(nodecount * sizeof(double));
+    results = malloc(nodecount * sizeof(double));
+    local_results = malloc(block_size * sizeof(double));
+    contribution = malloc(nodecount * sizeof(double));
+    
+    for(i = 0; i < nodecount; i++)
+    {
+        results[i] = 1.0 / nodecount;
+    }
+
+    update_contributions();
+}
+
 void solve()
 {
     int i, j;
@@ -79,13 +77,13 @@ void solve()
     do{
         
         // printf("1\n");
-        vec_cp(results, last_results, block_size);
+        vec_cp(results, last_results, nodecount);
         // update the value
         for ( i = 0; i < block_size; ++i){
             // printf("%d\n", i);
 
             local_results[i] = 0;
-            for ( j = 0; j < nodehead[i].num_in_links; ++j){
+            for ( j = 0; j < nodehead[mpi_rank*block_size+i].num_in_links; ++j){
                 // printf("3111111\n");
                 // printf("%d\n", nodehead[i].inlinks[j]);
                 // printf("3414141\n");
@@ -102,15 +100,15 @@ void solve()
         }
         // printf("4\n");
         // update and broadcast the contribution
+        MPI_Allgather(&local_results, block_size, MPI_DOUBLE, results, block_size, MPI_DOUBLE, MPI_COMM_WORLD);
         update_contributions();
-        MPI_Allgather(&local_results, block_size, MPI_DOUBLE, merged_result, block_size, MPI_DOUBLE, MPI_COMM_WORLD);
     }while(rel_error(results, last_results, block_size) >= EPSILON);
 }
 
 int main (int argc, char *argv[])
 {
-    double start, end;
-    int i, j;
+    // double start, end;
+    // int i, j;
     
     if (argc != 1) {
         printf ("No Command line arguments required for this program\n");
@@ -135,7 +133,7 @@ int main (int argc, char *argv[])
     // }
 
     Lab4_saveoutput(results, nodecount, 0.0);
-    MPI_Allgather(&results, block_size, MPI_DOUBLE, merged_result, block_size, MPI_DOUBLE, MPI_COMM_WORLD);
+    // MPI_Allgather(&results, block_size, MPI_DOUBLE, merged_result, block_size, MPI_DOUBLE, MPI_COMM_WORLD);
     MPI_Finalize();
     // printf("nodecount: %d\n", nodecount);
 
