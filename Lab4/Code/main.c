@@ -13,7 +13,6 @@
 
 int nodecount;
 
-// int node_begin, node_end;
 int block_size;
 
 double damp_const;
@@ -38,8 +37,6 @@ int get_data()
     fclose(ip);
 
     block_size = nodecount/mpi_size;
-    // node_begin = mpi_rank * block_size;
-    // node_end = node_begin + block_size - 1;
 
     if (node_init(&nodehead, 0, nodecount)) return 254;
     return 0;
@@ -84,31 +81,23 @@ void solve()
 
             local_results[i] = 0;
             for ( j = 0; j < nodehead[mpi_rank*block_size+i].num_in_links; ++j){
-                // printf("3111111\n");
-                // printf("%d\n", nodehead[i].inlinks[j]);
-                // printf("3414141\n");
-                // printf("%d\n", contribution[nodehead[i].inlinks[j]]);
 
                 local_results[i] += contribution[nodehead[mpi_rank*block_size+i].inlinks[j]];
 
             }
-            // printf("forend\n");
 
             local_results[i] += damp_const;
-        // printf("5\n");
-
         }
-        // printf("4\n");
+
+        MPI_Allgather(local_results, block_size, MPI_DOUBLE, results, block_size, MPI_DOUBLE, MPI_COMM_WORLD);
         // update and broadcast the contribution
-        MPI_Allgather(&local_results, block_size, MPI_DOUBLE, results, block_size, MPI_DOUBLE, MPI_COMM_WORLD);
         update_contributions();
     }while(rel_error(results, last_results, block_size) >= EPSILON);
 }
 
 int main (int argc, char *argv[])
 {
-    // double start, end;
-    // int i, j;
+    double start, end;
     
     if (argc != 1) {
         printf ("No Command line arguments required for this program\n");
@@ -125,29 +114,15 @@ int main (int argc, char *argv[])
 
     init_values();
 
+    GET_TIME(start);
     solve();
+    GET_TIME(end);
 
-    // for(i = 0; i < block_size; i++)
-    // {
-    //     printf("Node %d: %f\n", i, results[i]);
-    // }
-
-    Lab4_saveoutput(results, nodecount, 0.0);
-    // MPI_Allgather(&results, block_size, MPI_DOUBLE, merged_result, block_size, MPI_DOUBLE, MPI_COMM_WORLD);
+    if (mpi_rank == 0) {
+        Lab4_saveoutput(results, nodecount, end-start);
+    }
+    
     MPI_Finalize();
-    // printf("nodecount: %d\n", nodecount);
-
-    // for(i = 0; i < nodecount; i++)
-    // {
-    //     printf("Node %d\n", i);
-    //     printf("IncomingLinks: %d\n", nodehead[i].num_in_links);
-    //     for(j = 0; j < nodehead[i].num_in_links; j++)
-    //     {
-    //         printf("%d ", nodehead[i].inlinks[j]);
-    //     }
-    //     printf("\n");
-    //     printf("Num out links: %d\n", nodehead[i].num_out_links);
-    // }
     
     return 0;
 }
