@@ -1,7 +1,7 @@
 C = mpicc -ggdb -Wall
 
 main: main.c Lab4_IO.c
-	$(C) main.c Lab4_IO.c -o main
+	$(C) main.c Lab4_IO.c -o main -lm
 	@echo 'main.exe produced'
 
 datatrim: datatrim.c Lab4_IO.c

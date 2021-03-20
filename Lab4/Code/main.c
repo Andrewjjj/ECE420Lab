@@ -12,11 +12,18 @@
 #define EPSILON 0.00001
 
 int nodecount;
+
+int block_size;
+
 double damp_const;
 struct node *nodehead;
 double *last_results;
 double *results;
+double *local_results;
 double *contribution;
+
+int mpi_size;
+int mpi_rank;
 
 int get_data()
 {
@@ -29,21 +36,10 @@ int get_data()
     fscanf(ip, "%d\n", &nodecount);
     fclose(ip);
 
+    block_size = nodecount/mpi_size;
+
     if (node_init(&nodehead, 0, nodecount)) return 254;
     return 0;
-}
-
-void init_values()
-{
-    int i;
-    last_results = malloc(nodecount * sizeof(double));
-    results = malloc(nodecount * sizeof(double));
-    contribution = malloc(nodecount * sizeof(double));
-
-    for(i = 0; i < nodecount; i++)
-    {
-        results[i] = 1.0 / nodecount;
-    }
 }
 
 void update_contributions()
@@ -55,60 +51,78 @@ void update_contributions()
     }
 }
 
+void init_values()
+{
+    int i;
+    last_results = malloc(nodecount * sizeof(double));
+    results = malloc(nodecount * sizeof(double));
+    local_results = malloc(block_size * sizeof(double));
+    contribution = malloc(nodecount * sizeof(double));
+    
+    for(i = 0; i < nodecount; i++)
+    {
+        results[i] = 1.0 / nodecount;
+    }
+
+    update_contributions();
+}
+
 void solve()
 {
     int i, j;
+    
     do{
+        
+        // printf("1\n");
         vec_cp(results, last_results, nodecount);
         // update the value
-        for ( i = 0; i < nodecount; ++i){
-            results[i] = 0;
-            for ( j = 0; j < nodehead[i].num_in_links; ++j)
-                results[i] += contribution[nodehead[i].inlinks[j]];
-            results[i] += damp_const;
+        for ( i = 0; i < block_size; ++i){
+            // printf("%d\n", i);
+
+            local_results[i] = 0;
+            for ( j = 0; j < nodehead[mpi_rank*block_size+i].num_in_links; ++j){
+
+                local_results[i] += contribution[nodehead[mpi_rank*block_size+i].inlinks[j]];
+
+            }
+
+            local_results[i] += damp_const;
         }
+
+        MPI_Allgather(local_results, block_size, MPI_DOUBLE, results, block_size, MPI_DOUBLE, MPI_COMM_WORLD);
         // update and broadcast the contribution
         update_contributions();
-    }while(rel_error(results, last_results, nodecount) >= EPSILON);
+    }while(rel_error(results, last_results, block_size) >= EPSILON);
 }
 
 int main (int argc, char *argv[])
 {
     double start, end;
-    int i, j;
     
     if (argc != 1) {
         printf ("No Command line arguments required for this program\n");
         return 1;
     }
 
+    MPI_Init(NULL, NULL);
+
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+
     get_data();
     damp_const = (1.0 - DAMPING_FACTOR) / nodecount;
 
     init_values();
 
+    GET_TIME(start);
     solve();
+    GET_TIME(end);
 
-    for(i = 0; i < nodecount; i++)
-    {
-        printf("Node %d: %f\n", i, results[i]);
+    if (mpi_rank == 0) {
+        Lab4_saveoutput(results, nodecount, end-start);
     }
-
-    Lab4_saveoutput(results, nodecount, 0.0);
-
-    //printf("nodecount: %d\n", nodecount);
-
-    // for(i = 0; i < nodecount; i++)
-    // {
-    //     printf("Node %d\n", i);
-    //     printf("IncomingLinks: %d\n", nodehead[i].num_in_links);
-    //     for(j = 0; j < nodehead[i].num_in_links; j++)
-    //     {
-    //         printf("%d ", nodehead[i].inlinks[j]);
-    //     }
-    //     printf("\n");
-    //     printf("Num out links: %d\n", nodehead[i].num_out_links);
-    // }
+    
+    MPI_Finalize();
     
     return 0;
 }
