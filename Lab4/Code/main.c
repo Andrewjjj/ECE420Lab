@@ -12,7 +12,7 @@
 #define EPSILON 0.00001
 
 int nodecount;
-
+int nodecount_padded;
 int block_size;
 
 double damp_const;
@@ -37,6 +37,10 @@ int get_data()
     fclose(ip);
 
     block_size = nodecount/mpi_size;
+    if (nodecount%mpi_size) {
+        block_size += 1;
+    }
+    nodecount_padded = block_size * mpi_size;
 
     if (node_init(&nodehead, 0, nodecount)) return 254;
     return 0;
@@ -54,14 +58,17 @@ void update_contributions()
 void init_values()
 {
     int i;
-    last_results = malloc(nodecount * sizeof(double));
-    results = malloc(nodecount * sizeof(double));
+    last_results = malloc(nodecount_padded * sizeof(double));
+    results = malloc(nodecount_padded * sizeof(double));
     local_results = malloc(block_size * sizeof(double));
     contribution = malloc(nodecount * sizeof(double));
     
     for(i = 0; i < nodecount; i++)
     {
         results[i] = 1.0 / nodecount;
+    }
+    for(i = nodecount; i < nodecount_padded; i++) {
+        results[i] = 0;
     }
 
     update_contributions();
@@ -78,6 +85,9 @@ void solve()
         // update the value
         for ( i = 0; i < block_size; ++i){
             // printf("%d\n", i);
+            if (mpi_rank*block_size+i >= nodecount) {
+                break;
+            }
 
             local_results[i] = 0;
             for ( j = 0; j < nodehead[mpi_rank*block_size+i].num_in_links; ++j){
@@ -92,7 +102,7 @@ void solve()
         MPI_Allgather(local_results, block_size, MPI_DOUBLE, results, block_size, MPI_DOUBLE, MPI_COMM_WORLD);
         // update and broadcast the contribution
         update_contributions();
-    }while(rel_error(results, last_results, block_size) >= EPSILON);
+    }while(rel_error(results, last_results, nodecount) >= EPSILON);
 }
 
 int main (int argc, char *argv[])
