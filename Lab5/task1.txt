@@ -1,0 +1,6 @@
+var result = sc.textFile("data_input")
+            .map(_.split('\t')(1))
+            .map(word => (word, 1))
+            .reduceByKey(_ + _)
+            .sortBy(_._2, ascending=false)
+            .take(1)(0)._2
