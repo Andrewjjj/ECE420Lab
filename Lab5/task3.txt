@@ -1,0 +1,2 @@
+var max = sc.textFile("data_input").map(_.split("\t")(0)).map(word => (word, 1)).reduceByKey(_ + _).sortBy(_._2, ascending=false).take(1)(0)._2
+var result = sc.textFile("data_input").map(_.split("\t")(0)).map(word => (word, 1)).reduceByKey(_ + _).filter(_._2 == max).map(t => t._1)
